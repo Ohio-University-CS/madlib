@@ -9,6 +9,7 @@ from logic import (
     fill_story,
 )
 
+placeholders : list 
 
 def main():
     ai_output = (

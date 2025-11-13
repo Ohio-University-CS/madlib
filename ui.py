@@ -1,6 +1,10 @@
 import sys
-import logic 
-import main 
+from logic import (
+    extract_placeholders,
+    initialize_input_queue,
+    add_user_input,
+    fill_story
+)
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
     QPushButton, QLabel, QScrollArea, QFrame
@@ -10,46 +14,97 @@ from PyQt5.QtGui import (
     QIcon
 )
 
-class MadLibApp(QMainWindow):
+import sys
+from PyQt5.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QLabel,
+    QLineEdit, QPushButton, QTextEdit
+)
+from collections import deque
 
-    def __init__(self):
-        super().__init__()
-        
-        self.setWindowTitle("ChatLib")
-        self.setGeometry(480, 270, 960, 540)
+from logic import (
+    extract_placeholders,
+    initialize_input_queue,
+    add_user_input,
+    fill_story
+)
+class MadLibsWindow(QWidget):
+    def init(self, ai_text):
+        super().init()
 
-        # --- Central widget and layout ---
-        self.loading_screen = LoadingWidget()
-        self.type_words = UserInputScreen()
-        self.display = DisplayResultWidget()
+        self.ai_text = ai_text
+        self.placeholders = extract_placeholders(ai_text)
+        self.user_inputs = initialize_input_queue(len(self.placeholders))
 
-        self.setCentralWidget(self.loading_screen) # set the main widget to be the central widget
+        self.input_fields = []   # list of QLineEdit widgets
 
+        self.init_ui()
 
-#Widget to load while AI generating
-class LoadingWidget(QFrame):
+    def init_ui(self):
+        layout = QVBoxLayout()
 
-    def __init__(self):
-        super().__init__()
-        
-        self.loading_screen_layout = QVBoxLayout()
-        self.setLayout(self.loading_screen_layout)
+        # Show the template text
+        layout.addWidget(QLabel("MadLib Template:"))
+        self.template_label = QLabel(self.ai_text)
+        layout.addWidget(self.template_label)
 
-        self.generating_label = QLabel("Generating a ChatLib...")
-        self.generating_label.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
-        self.generating_label.setStyleSheet("color:black; font-weight: bold;")
+        # Create input boxes based on placeholders
+        layout.addWidget(QLabel("Fill in the blanks:"))
 
-        self.loading_screen_layout.addWidget(self.generating_label)
+        for token in self.placeholders:
+            label = QLabel(f"{token}:")
+            field = QLineEdit()
+            layout.addWidget(label)
+            layout.addWidget(field)
 
-class UserInputScreen(QFrame):
-    pass
+            self.input_fields.append(field)
 
-class DisplayResultWidget(QFrame):
-    pass
+        # Submit button
+        submit_btn = QPushButton("Generate Story")
+        submit_btn.clicked.connect(self.generate_story)
+        layout.addWidget(submit_btn)
 
-# MAIN FUNCTION
+        # Output
+        self.output_box = QTextEdit()
+        layout.addWidget(self.output_box)
+
+        self.setLayout(layout)
+
+# -----------------------------------------------------------
+# READ INPUT FIELDS → PUSH INTO user_inputs QUEUE
+# -----------------------------------------------------------
+def generate_story(self):
+    """
+    Read each QLineEdit, push value into user_inputs queue,
+    then fill the story.
+    """
+    # Empty the queue so we can refill it
+    self.user_inputs = deque()
+
+    # Read UI fields and push into queue in correct order
+    for field in self.input_fields:
+        value = field.text()
+        self.user_inputs.append(value)
+
+    # Make a copy because fill_story consumes queues
+    filled_story = fill_story(
+        self.ai_text,
+        deque(self.placeholders),
+        deque(self.user_inputs)
+    )
+
+    # Display
+    self.output_box.setText(filled_story)
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = MadLibApp()
+
+    # Example AI text (in real usage you will call Gemini here)
+    ai_output = (
+        "Today I went to the {place} to meet a {adjective} {animal}. "
+        "We decided to {verb} together."
+    )
+
+    window = MadLibsWindow(ai_output)
     window.show()
-    sys.exit(app.exec_())
+
+    sys.exit(app.exec())
