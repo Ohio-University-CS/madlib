@@ -1,0 +1,2 @@
+
+echo "GEMINI_API_KEY=AIzaSyBsqItdLobUoqGbydFb0IQTyTZvni4vgqY" > .env
